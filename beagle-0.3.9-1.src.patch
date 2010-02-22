@@ -1,0 +1,125 @@
+--- origsrc/beagle-0.3.9/Util/ImBuddy.cs	2007-11-26 19:49:59.000000000 -0600
++++ src/beagle-0.3.9/Util/ImBuddy.cs	2010-01-31 21:37:29.459067900 -0600
+@@ -269,7 +269,7 @@ namespace Beagle.Util {
+ 
+ 		public KopeteBuddyListReader ()
+ 		{
+-			buddy_list_dir = Path.Combine (PathFinder.HomeDir, ".kde/share/apps/kopete");
++			buddy_list_dir = Path.Combine (PathFinder.HomeDir, ".kde4/share/apps/kopete");
+ 			buddy_list_path = Path.Combine (buddy_list_dir, "contactlist.xml");
+ 			
+ 			if (File.Exists (buddy_list_path))
+--- origsrc/beagle-0.3.9/Util/SystemInformation.cs	2008-02-10 14:24:20.000000000 -0600
++++ src/beagle-0.3.9/Util/SystemInformation.cs	2010-01-31 21:17:53.973833900 -0600
+@@ -111,7 +111,7 @@ namespace Beagle.Util {
+ 			External = 2
+ 		}
+ 
+-		[DllImport ("libbeagleglue.so")]
++		[DllImport ("libbeagleglue")]
+ 		extern static unsafe int screensaver_glue_init ();
+ 
+ 		/// <summary>
+@@ -131,7 +131,7 @@ namespace Beagle.Util {
+ 			return use_screensaver;
+ 		}
+ 
+-		[DllImport ("libbeagleglue.so")]
++		[DllImport ("libbeagleglue")]
+ 		extern static unsafe int screensaver_info (ScreenSaverState *state,
+ 							   ScreenSaverKind *kind,
+ 							   ulong *til_or_since,
+--- origsrc/beagle-0.3.9/Util/UiUtil.dll.config	2008-07-17 03:58:38.000000000 -0500
++++ src/beagle-0.3.9/Util/UiUtil.dll.config	2010-01-31 18:47:19.378084600 -0600
+@@ -1,3 +1,3 @@
+ <configuration>
+-	<dllmap dll="libgnomevfs-2" target="libgnomevfs-2.so.0"/>
++	<dllmap dll="libgnomevfs-2" target="cyggnomevfs-2-0.dll"/>
+ </configuration>
+--- origsrc/beagle-0.3.9/Util/Util.dll.config	2008-04-13 17:16:47.000000000 -0500
++++ src/beagle-0.3.9/Util/Util.dll.config	2010-01-31 21:08:25.833338200 -0600
+@@ -1,2 +1,4 @@
+ <configuration>
++  <dllmap dll="libbeagleglue" target="cygbeagleglue.dll" os="cygwin" />
++  <dllmap dll="libbeagleuiglue" target="cygbeagleuiglue.dll" os="cygwin" />
+ </configuration>
+--- origsrc/beagle-0.3.9/configure.in	2008-07-19 06:20:19.000000000 -0500
++++ src/beagle-0.3.9/configure.in	2010-01-31 18:43:34.307211300 -0600
+@@ -110,6 +110,8 @@ case "$target" in
+   *-*-freebsd*)
+     os=freebsd
+     ;;
++  *-*-cygwin*)
++    ;;
+   *)
+     AC_MSG_ERROR([Unrecognised target OS: $target])
+     ;;
+--- origsrc/beagle-0.3.9/glue/Makefile.am	2008-07-17 01:38:02.000000000 -0500
++++ src/beagle-0.3.9/glue/Makefile.am	2010-01-31 21:04:54.774266300 -0600
+@@ -94,6 +94,8 @@ libbeagleglue_la_LIBADD =	\
+ 	$(SYSINFO_GLUE_LIBADD)	\
+ 	$(EXTRA_GLUE_LIBADD)
+ 
++libbeagleglue_la_LDFLAGS = -module -avoid-version -no-undefined
++
+ libbeagleuiglue_la_SOURCES =	\
+ 	$(KEY_GLUE_SOURCES)	\
+ 	$(UI_GLUE_SOURCES)
+@@ -101,6 +103,8 @@ libbeagleuiglue_la_SOURCES =	\
+ libbeagleuiglue_la_LIBADD =	\
+ 	$(UI_GLUE_LIBADD)
+ 
++libbeagleuiglue_la_LDFLAGS = -module -avoid-version -no-undefined
++
+ gluelibdir = $(pkglibdir)
+ gluelib_LTLIBRARIES = 		\
+ 	libbeagleglue.la
+--- origsrc/beagle-0.3.9/glue/ioprio-glue.c	2007-11-26 19:50:05.000000000 -0600
++++ src/beagle-0.3.9/glue/ioprio-glue.c	2010-01-31 20:46:16.488304000 -0600
+@@ -25,6 +25,8 @@
+  */
+ 
+ 
++#if defined(__linux) || defined(__FreeBSD__)
++
+ #include <sys/syscall.h>
+ #include <unistd.h>
+ 
+@@ -106,3 +108,5 @@ int set_io_priority_best_effort (int iop
+ 
+ 	return ioprio_set (IOPRIO_WHO_PROCESS, 0, ioprio | ioclass);
+ }
++
++#endif /* __linux || __FreeBSD__ */
+--- origsrc/beagle-0.3.9/glue/thread-glue.c	2007-11-26 19:50:05.000000000 -0600
++++ src/beagle-0.3.9/glue/thread-glue.c	2010-01-31 19:15:56.709310400 -0600
+@@ -27,7 +27,9 @@
+ 
+ #include <sys/types.h>
+ #include <unistd.h>
++#ifdef __linux__
+ #include <linux/unistd.h>
++#endif
+ #include <errno.h>
+ 
+ #ifdef __NR_gettid
+--- origsrc/beagle-0.3.9/search/Beagle.Search.exe.config	2008-07-17 03:59:14.000000000 -0500
++++ src/beagle-0.3.9/search/Beagle.Search.exe.config	2010-01-31 21:15:31.156665300 -0600
+@@ -1,4 +1,5 @@
+ <configuration>
+-	<dllmap dll="libgnome-desktop-2" target="libgnome-desktop-2.so.2" />
++	<dllmap dll="libgnome-desktop-2" target="cyggnome-desktop-2-11.dll" />
++	<dllmap dll="libbeagleuiglue.so" target="cygbeagleuiglue.dll" os="cygwin" />
+ </configuration>
+ 
+--- origsrc/beagle-0.3.9/tools/Makefile.am	2008-06-12 05:08:02.000000000 -0500
++++ src/beagle-0.3.9/tools/Makefile.am	2010-01-31 21:00:34.813397400 -0600
+@@ -106,7 +106,7 @@ SETTINGS_WRAPPER   = beagle-settings
+ SETTINGS_CSFLAGS   = 
+ SETTINGS_CSFILES   = $(srcdir)/Settings.cs
+ SETTINGS_RESOURCES = $(srcdir)/settings.glade $(top_srcdir)/beagled/beagled-autostart.desktop $(top_srcdir)/search/beagle-search-autostart.desktop
+-SETTINGS_RESOURCES_BUILD = $(foreach res,$(SETTINGS_RESOURCES), $(addprefix -resource:,$(srcdir)/$(res)),$(notdir $(res)))
++SETTINGS_RESOURCES_BUILD = $(foreach res,$(SETTINGS_RESOURCES), $(addprefix -resource:,$(res)),$(notdir $(res)))
+ SETTINGS_ASSEMBLIES = $(BEAGLE_UI_LIBS) -r:../Util/UiUtil.dll
+ 
+ if ENABLE_AVAHI

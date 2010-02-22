@@ -1,0 +1,6 @@
+inherit mono gnome2
+
+DESCRIPTION="Desktop search tool"
+HOMEPAGE="http://beagle-project.org/"
+
+CYGCONF_ARGS="--disable-inotify --disable-thunderbird"
